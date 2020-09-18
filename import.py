@@ -754,10 +754,10 @@ class Run:
                         if importing_policy['_id'] == policy:
                             policies.append(policy)
                             break
-                for policy in res['custom_policies']:
+                for rec in res['custom_policies']:
                     for importing_policy in self.POLICIES:
-                        if importing_policy['_id'] == policy:
-                            custom_policies.append(policy)
+                        if importing_policy['_id'] == rec['policy']:
+                            custom_policies.append(rec)
                             break
                 res['custom_policies'] = custom_policies
                 res['policies'] = policies
@@ -795,6 +795,13 @@ class Run:
             if "actions" in o.keys():
                 for a in o["actions"]:
                     actions.add(str(a))
+            if "custom_policies" in o.keys():
+                for rec in o["custom_policies"]:
+                    for p in self.POLICIES:
+                        if rec['policy'] == p['_id']:
+                            for a in rec['actions']:
+                                actions.add(str(a))
+                            break
 
             return actions, tags
 
