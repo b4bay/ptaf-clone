@@ -678,7 +678,7 @@ class Run:
             if "custom_policies" in o.keys():
                 for rec in o["custom_policies"]:
                     for p in self.POLICIES:
-                        if rec['policies'] == p['_id']:
+                        if rec['policy'] == p['_id']:
                             for a in rec['actions']:
                                 actions.add(str(a))
                             break
