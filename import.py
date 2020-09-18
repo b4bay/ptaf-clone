@@ -681,13 +681,11 @@ class Run:
             res['template_id'] = None
             if not self.args.IMPORT_EXCLUDES:
                 res['filters'] = list()
-                res['custom_filter'] = None
                 for p in protectors:
                     if p in res.keys() and res[p]:
                         if 'filters' in res[p].keys():
                             res[p]['filters'] = list()
-                        if 'custom_filter' in res[p].keys():
-                            res[p]['custom_filter'] = None
+
             return res
 
         def matched(o, dependent=False):
@@ -748,8 +746,21 @@ class Run:
             res = obj
             res['template_id'] = list()
             if rules_to_check is None:  # Do not clean policy for dependent rules
-                res['custom_policies'] = list()
-                res['policies'] = list()
+                policies = list()
+                custom_policies = list()
+                # Leave only importing policies
+                for policy in res['policies']:
+                    for importing_policy in self.POLICIES:
+                        if importing_policy['_id'] == policy:
+                            policies.append(policy)
+                            break
+                for policy in res['custom_policies']:
+                    for importing_policy in self.POLICIES:
+                        if importing_policy['_id'] == policy:
+                            custom_policies.append(policy)
+                            break
+                res['custom_policies'] = policies
+                res['policies'] = custom_policies
             if not self.args.IMPORT_EXCLUDES:
                 res['filters'] = list()
             return res
@@ -1039,8 +1050,8 @@ class Run:
 
     def load(self, form="yaml"):
         self.load_tags(form)
-        self.load_rules(form)
         self.load_policies(form)
+        self.load_rules(form)
         self.load_events(form)
         self.load_alerts(form)
         self.load_actions(form)

@@ -183,6 +183,8 @@ def parse_cli_args(test_data=""):
     args.EXPORT_EVENTS = parse_single_arg(args.EVENTS)
     args.EXPORT_ALERTS = parse_single_arg(args.ALERTS)
     args.EXPORT_ACTIONS = parse_single_arg(args.ACTIONS)
+    args.EXPORT_BLACKLIST = args.BLACKLIST
+    args.EXPORT_FIREWALL = args.FIREWALL
 
     del args.POLICIES
     del args.RULES
@@ -673,6 +675,13 @@ class Run:
             if "actions" in o.keys():
                 for a in o["actions"]:
                     actions.add(str(a))
+            if "custom_policies" in o.keys():
+                for rec in o["custom_policies"]:
+                    for p in self.POLICIES:
+                        if rec['policies'] == p['_id']:
+                            for a in rec['actions']:
+                                actions.add(str(a))
+                            break
 
             return actions, tags
 
