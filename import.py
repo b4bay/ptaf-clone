@@ -759,8 +759,8 @@ class Run:
                         if importing_policy['_id'] == policy:
                             custom_policies.append(policy)
                             break
-                res['custom_policies'] = policies
-                res['policies'] = custom_policies
+                res['custom_policies'] = custom_policies
+                res['policies'] = policies
             if not self.args.IMPORT_EXCLUDES:
                 res['filters'] = list()
             return res
