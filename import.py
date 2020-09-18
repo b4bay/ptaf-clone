@@ -1172,8 +1172,8 @@ class Run:
                     replace_one(loaded)
 
     def commit_policies(self):
-        def build_update(o):
-            tmp = o
+        def build_update(loaded, stored):
+            tmp = loaded
             protectors = ["AuthLDAP", "AuthOracle", "BlacklistProtector", "CSPProtector",
                           "CSRFProtector", "DDoSProtector", "HMMProtector", "HTTPProtector",
                           "ICAPProtector", "JSONProtector", "OpenRedirectProtector", "ResponseFilter",
@@ -1185,17 +1185,15 @@ class Run:
             res = {"$set": {}}
             if not self.args.IMPORT_EXCLUDES:  # Remove filters
                 # Clean policy filter
-                if "filters" in tmp.keys():
-                    del tmp['filters']
+                tmp['filters'] = stored['filters']
                 # Clean protectors' filters
                 for p in protectors:
-                    if p in tmp.keys() and tmp[p]:
-                        if 'filters' in tmp[p].keys():
-                            del tmp[p]['filters']
+                    if 'filters' in stored[p].keys():
+                        tmp[p]['filters'] = stored[p]['filters']
                 # Clean filters for WafJs modules
                 for m in wafjs_modules:
-                    if 'filters' in tmp["WafJsProtector"][m].keys():
-                        del tmp["WafJsProtector"][m]['filters']
+                    if 'filters' in stored["WafJsProtector"][m].keys():
+                        tmp["WafJsProtector"][m]['filters'] = stored["WafJsProtector"][m]['filters']
 
             res["$set"] = tmp
 
@@ -1232,23 +1230,20 @@ class Run:
 
             if not self.args.IMPORT_EXCLUDES:  # Do not update excludes
                 if "filters" in tmp.keys():
-                    del tmp['filters']
+                    tmp['filters'] = stored['filters']
 
             if "policies" in tmp.keys():  # Do not update policies
-                del tmp['policies']
+                tmp['policies'] = stored['policies']
 
             if "custom_policies" in tmp.keys():  # Do not update custom policy actions
-                del tmp['custom_policies']
+                tmp['custom_policies'] = stored['custom_policies']
 
+            tags = stored["tags"]
             if "tags" in tmp.keys() and tmp['tags']:  # Join new tags with stored ones
-                if "tags" in stored.keys():
-                    tags = stored["tags"]
-                else:
-                    tags = list()
                 for t in tmp["tags"]:
                     if t not in tags:
                         tags.append(t)
-                tmp["tags"] = tags
+            tmp["tags"] = tags
 
             res["$set"] = tmp
             return res
