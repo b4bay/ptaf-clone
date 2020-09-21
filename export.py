@@ -5,10 +5,10 @@ from datetime import datetime
 import os
 import shutil
 import yaml
-import sys
 from pymongo import MongoClient
 from bson import objectid, int64, ObjectId
 from bson.errors import InvalidId
+from copy import deepcopy
 
 
 def objectid_representer(dumper, data):
@@ -95,16 +95,11 @@ def parse_cli_args(test_data=""):
             return re.compile(s, re.IGNORECASE)
 
     parser = argparse.ArgumentParser(description='Export data from PT AF')
-    parser.add_argument('MODE',
+    parser.add_argument('CLASS',
                         action='store',
-                        choices=["all", "class"],
-                        help='Mode of export. Use "all" to export all the supported classes or "class" to export exact class of objects')
-    parser.add_argument('-c', '--class',
-                        action='store',
-                        dest='CLASS',
-                        choices=["policies", "rules", "tags", "events", "alerts", "actions", "blacklist-ip", "blacklist-hosts", "firewall"],
-                        required=' class ' in sys.argv,
-                        help='Class of object(s) to export. Other classes will be exported only if needed')
+                        choices=["all", "policies", "rules", "tags", "events", "alerts", "actions", "blacklist-ip", "blacklist-hosts", "firewall"],
+                        required=True,
+                        help='Class of object(s) to export. Use "all" to export all the supported classes. Other classes will be exported only if needed')
     parser.add_argument('-f', '--folder',
                         action='store',
                         dest='FOLDER',
@@ -245,10 +240,6 @@ class Run:
 
     # Methods to get data for export
     def get_actions(self, actions_to_check=None):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o, dependent=False):
             if dependent:  # Process dependent objects
                 if type(self.args.EXPORT_ACTIONS) == bool:  # Simple condition
@@ -275,7 +266,7 @@ class Run:
         if actions_to_check is None:  # Primary class,check all the objects
             for o in self.ALL_ACTIONS:
                 if matched(o):
-                    res.append(clean(o))
+                    res.append(o)
         else:  # Dependent class, check only objects from received list
             for oid in actions_to_check:
                 try:
@@ -296,10 +287,6 @@ class Run:
                 self.ACTIONS.append(o)
 
     def get_alerts(self, alerts_to_check=None):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o, dependent=False):
             if dependent:  # Process dependent objects
                 if type(self.args.EXPORT_ALERTS) == bool:  # Simple condition
@@ -345,7 +332,7 @@ class Run:
         if alerts_to_check is None:  # Primary class,check all the objects
             for o in self.ALL_ALERTS:
                 if matched(o):
-                    res.append(clean(o))
+                    res.append(o)
                     parent_alerts |= get_parent(o)
         else:  # Dependent class, check only objects from received list
             for oid in alerts_to_check:
@@ -366,8 +353,8 @@ class Run:
             oid = parent_alerts.pop()
             for o in self.ALL_ALERTS:
                 if ObjectId(oid) == o['_id']:
-                    if clean(o) not in res:
-                        res.append(clean(o))
+                    if o not in res:
+                        res.append(o)
                         parent_alerts |= get_parent(o)
 
         # Process the list of candidates and extract dependencies (if any)
@@ -383,10 +370,6 @@ class Run:
         return list(dependent_actions), list(dependent_events)
 
     def get_events(self, events_to_check=None):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o, dependent=False):
             if dependent:  # Process dependent objects
                 if type(self.args.EXPORT_EVENTS) == bool:  # Simple condition
@@ -494,9 +477,6 @@ class Run:
 
                 return rules, tags
 
-            tags = set()
-            rules = set()
-
             if len(o['condition'].keys()) == 1:  # AND or OR
                 rules, tags = check_list_of_conditions(o['condition'][o['condition'].keys()[0]])
             else:
@@ -516,7 +496,7 @@ class Run:
         if events_to_check is None:  # Primary class,check all the objects
             for o in self.ALL_EVENTS:
                 if matched(o):
-                    res.append(clean(o))
+                    res.append(o)
                     parent_events |= get_parent(o)
         else:  # Dependent class, check only objects from received list
             for oid in events_to_check:
@@ -537,8 +517,8 @@ class Run:
             oid = parent_events.pop()
             for o in self.ALL_EVENTS:
                 if ObjectId(oid) == o['_id']:
-                    if clean(o) not in res:
-                        res.append(clean(o))
+                    if o not in res:
+                        res.append(o)
                         parent_events |= get_parent(o)
 
         # Process the list of candidates and extract dependencies (if any)
@@ -554,30 +534,6 @@ class Run:
         return list(dependent_rules), list(dependent_tags)
 
     def get_policies(self, policies_to_check=None):
-        def clean(obj):
-            protectors = ["AuthLDAP", "AuthOracle", "BlacklistProtector", "CSPProtector",
-                          "CSRFProtector", "DDoSProtector", "HMMProtector", "HTTPProtector",
-                          "ICAPProtector", "JSONProtector", "OpenRedirectProtector", "ResponseFilter",
-                          "RobotProtector", "RuleEngine", "RVPProtector", "ScriptEngine",
-                          "SessionCookieProtector", "SQLiProtector", "XMLProtector",
-                          "XSSProtector"]
-            wafjs_modules = ["botdetector", "domauth", "domcleaner", "domdetective"]
-            res = obj
-            if not self.args.DUMP_EXCLUDES:  # Clean filters
-                # Clean policy filter
-                res['filters'] = list()
-                # Clean protectors' filters
-                for p in protectors:
-                    if p in res.keys() and res[p]:
-                        if 'filters' in res[p].keys():
-                            res[p]['filters'] = list()
-                # Clean filters for WafJs modules
-                for m in wafjs_modules:
-                    if 'filters' in res["WafJsProtector"][m].keys():
-                        res["WafJsProtector"][m]['filters'] = list()
-
-            return res
-
         def matched(o, dependent=False):
             if dependent:  # Process dependent objects
                 if type(self.args.EXPORT_POLICIES) == bool:  # Simple condition
@@ -613,7 +569,7 @@ class Run:
         if policies_to_check is None:  # Primary class,check all the objects
             for o in self.ALL_POLICIES:
                 if matched(o):
-                    res.append(clean(o))
+                    res.append(o)
         else:  # Dependent class, check only objects from received list
             for oid in policies_to_check:
                 for o in self.ALL_POLICIES:
@@ -632,26 +588,6 @@ class Run:
         return list(dependent_rules)
 
     def get_rules(self, rules_to_check=None):
-        def clean(obj):
-            res = obj
-            res['template_id'] = list()
-            # Filter rule custom policies
-            res['custom_policies'] = list()
-            for r in obj['custom_policies']:
-                for p in self.POLICIES:
-                    if p["_id"] == r["policy"]:  # Policy in the export scope, keep it
-                        res['custom_policies'].append(r)
-            # Filter rule policies
-            res['policies'] = list()
-            for r in obj['policies']:
-                for p in self.POLICIES:
-                    if p["_id"] == r:  # Policy in the export scope, keep it
-                        res['policies'].append(r)
-            # Clean excludes
-            if not self.args.DUMP_EXCLUDES:
-                res['filters'] = list()
-            return res
-
         def matched(o, dependent=False):
             if dependent:  # Process dependent objects
                 if type(self.args.EXPORT_RULES) == bool:  # Simple condition
@@ -697,7 +633,7 @@ class Run:
         if rules_to_check is None:  # Primary class,check all the objects
             for o in self.ALL_RULES:
                 if matched(o):
-                    res.append(clean(o))
+                    res.append(o)
         else:  # Dependent class, check only objects from received list
             for oid in rules_to_check:
                 try:
@@ -709,7 +645,7 @@ class Run:
                     if o["_id"] == rule_id:
                         if matched(o, dependent=True):
                             if o not in res:
-                                res.append(clean(o))
+                                res.append(o)
 
         # Process the list of candidates and extract dependencies (if any)
         dependent_tags = set()
@@ -724,10 +660,6 @@ class Run:
         return list(dependent_actions), list(dependent_tags)
 
     def get_tags(self, tags_to_check=None):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o, dependent=False):
             if dependent:  # Process dependent objects
                 if type(self.args.EXPORT_TAGS) == bool:  # Simple condition
@@ -754,7 +686,7 @@ class Run:
         if tags_to_check is None:  # Primary class,check all the objects
             for o in self.ALL_TAGS:
                 if matched(o):
-                    res.append(clean(o))
+                    res.append(o)
         else:  # Dependent class, check only objects from received list
             for oid in tags_to_check:
                 try:
@@ -775,10 +707,6 @@ class Run:
                 self.TAGS.append(o)
 
     def get_blacklist_ip(self):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o):
             if self.args.EXPORT_BLACKLIST == 'all':  # Export all the records
                 return True
@@ -798,7 +726,7 @@ class Run:
         res = list()
         for o in self.ALL_BLACKLIST_IP:
             if matched(o):
-                res.append(clean(o))
+                res.append(o)
 
         # Process the list of candidates and extract dependencies (if any)
         for o in res:
@@ -807,10 +735,6 @@ class Run:
                 self.BLACKLIST_IP.append(o)
 
     def get_blacklist_hosts(self):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o):
             # Always export all the blacklist hosts
             return True
@@ -819,7 +743,7 @@ class Run:
         res = list()
         for o in self.ALL_BLACKLIST_HOSTS:
             if matched(o):
-                res.append(clean(o))
+                res.append(o)
 
         # Process the list of candidates and extract dependencies (if any)
         for o in res:
@@ -828,10 +752,6 @@ class Run:
                 self.BLACKLIST_HOSTS.append(o)
 
     def get_firewall(self):
-        def clean(obj):
-            res = obj
-            return res
-
         def matched(o):
             if self.args.EXPORT_FIREWALL == 'all':  # Export all the records
                 return True
@@ -849,7 +769,7 @@ class Run:
         res = list()
         for o in self.ALL_FIREWALL:
             if matched(o):
-                res.append(clean(o))
+                res.append(o)
 
         # Process the list of candidates and extract dependencies (if any)
         dependent_actions = set()
@@ -862,92 +782,163 @@ class Run:
 
     # Methods to store data
     def store_actions(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.ACTIONS_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.ACTIONS:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_alerts(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.ALERTS_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.ALERTS:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_events(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.EVENTS_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.EVENTS:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_policies(self, form="yaml"):
+        def clear(obj):
+            protectors = ["AuthLDAP", "AuthOracle", "BlacklistProtector", "CSPProtector",
+                          "CSRFProtector", "DDoSProtector", "HMMProtector", "HTTPProtector",
+                          "ICAPProtector", "JSONProtector", "OpenRedirectProtector", "ResponseFilter",
+                          "RobotProtector", "RuleEngine", "RVPProtector", "ScriptEngine",
+                          "SessionCookieProtector", "SQLiProtector", "XMLProtector",
+                          "XSSProtector"]
+            wafjs_modules = ["botdetector", "domauth", "domcleaner", "domdetective"]
+            res = deepcopy(obj)
+            if not self.args.DUMP_EXCLUDES:  # Clean filters
+                # Clean policy filter
+                res['filters'] = list()
+                # Clean protectors' filters
+                for p in protectors:
+                    if p in res.keys() and res[p]:
+                        if 'filters' in res[p].keys():
+                            res[p]['filters'] = list()
+                # Clean filters for WafJs modules
+                for m in wafjs_modules:
+                    if 'filters' in res["WafJsProtector"][m].keys():
+                        res["WafJsProtector"][m]['filters'] = list()
+
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.POLICIES_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.POLICIES:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_rules(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            # Filter rule custom policies
+            res['custom_policies'] = list()
+            for r in obj['custom_policies']:
+                for p in self.POLICIES:
+                    if p["_id"] == r["policy"]:  # Policy in the export scope, keep it
+                        res['custom_policies'].append(r)
+            # Filter rule policies
+            res['policies'] = list()
+            for r in obj['policies']:
+                for p in self.POLICIES:
+                    if p["_id"] == r:  # Policy in the export scope, keep it
+                        res['policies'].append(r)
+            # Clean excludes
+            if not self.args.DUMP_EXCLUDES:
+                res['filters'] = list()
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.RULES_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.RULES:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_tags(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.TAGS_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.TAGS:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_blacklist_ip(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.BLACKLIST_IP_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.BLACKLIST_IP:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_blacklist_hosts(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.BLACKLIST_HOSTS_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.BLACKLIST_HOSTS:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
     def store_firewall(self, form="yaml"):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         store_path = os.path.join(self.args.FOLDER, self.FIREWALL_DIR)
         if not os.path.exists(store_path):
             os.mkdir(store_path)
         if form == "yaml":
             for o in self.FIREWALL:
-                store_as_yaml(o, os.path.join(store_path, str(o['_id']) + ".yml"))
+                store_as_yaml(clear(o), os.path.join(store_path, str(o['_id']) + ".yml"))
         else:
             raise NotImplementedError("Storing as {} isn't implemented".format(form))
 
@@ -1057,7 +1048,7 @@ class Run:
         self.go_single()
 
     def go(self):
-        if self.args.MODE == "all":
+        if self.args.CLASS == "all":
             self.go_all()
         else:
             self.go_single()

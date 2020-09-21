@@ -4,10 +4,10 @@ import subprocess
 from datetime import datetime
 import os
 import yaml
-import sys
 from pymongo import MongoClient
 from bson import objectid, int64, ObjectId
 from bson.errors import InvalidId
+from copy import deepcopy
 
 
 def objectid_constructor(loader, data):
@@ -117,16 +117,12 @@ def parse_cli_args(test_data=""):
             return re.compile(s, re.IGNORECASE)
 
     parser = argparse.ArgumentParser(description='Import data to PT AF')
-    parser.add_argument('MODE',
+    parser.add_argument('CLASS',
                         action='store',
-                        choices=["all", "class"],
-                        help='Mode of import. Use "all" to import all the supported classes, or "class" to import exact class of objects')
-    parser.add_argument('-c', '--class',
-                        action='store',
-                        dest='CLASS',
-                        choices=["policies", "rules", "tags", "events", "alerts", "actions"],
-                        required=' class ' in sys.argv,
-                        help='Class of object(s) to be imported. Other classes will be imported only if needed')
+                        choices=["all", "policies", "rules", "tags", "events", "alerts", "actions", "blacklist-ip",
+                                 "blacklist-hosts", "firewall"],
+                        required=True,
+                        help='Class of object(s) to import. Use "all" to import all the supported classes. Other classes will be imported only if needed')
     parser.add_argument('-f', '--folder',
                         action='store',
                         dest='FOLDER',
@@ -354,7 +350,7 @@ class Run:
         self.go_single()
 
     def go(self):
-        if self.args.MODE == "all":
+        if self.args.CLASS == "all":
             self.go_all()
         else:
             self.go_single()
@@ -1084,6 +1080,10 @@ class Run:
         self.commit_firewall()
 
     def commit_actions(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('actions', str(o['_id']), o)
 
@@ -1100,8 +1100,9 @@ class Run:
                     return loaded['revision'] > stored['revision']
 
         for loaded in self.ACTIONS:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for a in self.STORED_ACTIONS:
@@ -1110,11 +1111,15 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_alerts(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('alerts', str(o['_id']), o)
 
@@ -1131,8 +1136,9 @@ class Run:
                     return loaded['revision'] > stored['revision']
 
         for loaded in self.ALERTS:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for a in self.STORED_ALERTS:
@@ -1141,11 +1147,15 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_events(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('events', str(o['_id']), o)
 
@@ -1162,8 +1172,9 @@ class Run:
                     return loaded['revision'] > stored['revision']
 
         for loaded in self.EVENTS:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for e in self.STORED_EVENTS:
@@ -1172,13 +1183,37 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_policies(self):
+        def clear(obj):
+            protectors = ["AuthLDAP", "AuthOracle", "BlacklistProtector", "CSPProtector",
+                          "CSRFProtector", "DDoSProtector", "HMMProtector", "HTTPProtector",
+                          "ICAPProtector", "JSONProtector", "OpenRedirectProtector", "ResponseFilter",
+                          "RobotProtector", "RuleEngine", "RVPProtector", "ScriptEngine",
+                          "SessionCookieProtector", "SQLiProtector", "WafJsProtector", "XMLProtector",
+                          "XSSProtector"]
+            wafjs_modules = ["botdetector", "domauth", "domcleaner", "domdetective"]
+            res = obj
+            if not self.args.IMPORT_EXCLUDES:
+                # Clear policy filter
+                res['filters'] = list()
+                # Clear protectors' filters
+                for p in protectors:
+                    if p in res.keys() and res[p]:
+                        if 'filters' in res[p].keys():
+                            res[p]['filters'] = list()
+                # Clear filters for WafJs modules
+                for m in wafjs_modules:
+                    if 'filters' in res["WafJsProtector"][m].keys():
+                        res["WafJsProtector"][m]['filters'] = list()
+
+            return res
+
         def build_update(loaded, stored):
-            tmp = loaded
+            tmp = deepcopy(loaded)
             protectors = ["AuthLDAP", "AuthOracle", "BlacklistProtector", "CSPProtector",
                           "CSRFProtector", "DDoSProtector", "HMMProtector", "HTTPProtector",
                           "ICAPProtector", "JSONProtector", "OpenRedirectProtector", "ResponseFilter",
@@ -1188,17 +1223,17 @@ class Run:
             wafjs_modules = ["botdetector", "domauth", "domcleaner", "domdetective"]
 
             res = {"$set": {}}
-            if not self.args.IMPORT_EXCLUDES:  # Remove filters
-                # Clean policy filter
-                tmp['filters'] = stored['filters']
-                # Clean protectors' filters
+            if not self.args.IMPORT_EXCLUDES:  # Keep filters
+                # Keep policy filter
+                tmp['filters'] = deepcopy(stored['filters'])
+                # keep protectors' filters
                 for p in protectors:
                     if 'filters' in stored[p].keys():
-                        tmp[p]['filters'] = stored[p]['filters']
-                # Clean filters for WafJs modules
+                        tmp[p]['filters'] = deepcopy(stored[p]['filters'])
+                # Keep filters for WafJs modules
                 for m in wafjs_modules:
                     if 'filters' in stored["WafJsProtector"][m].keys():
-                        tmp["WafJsProtector"][m]['filters'] = stored["WafJsProtector"][m]['filters']
+                        tmp["WafJsProtector"][m]['filters'] = deepcopy(stored["WafJsProtector"][m]['filters'])
 
             res["$set"] = tmp
 
@@ -1214,8 +1249,9 @@ class Run:
             return True  # Always update policies
 
         for loaded in self.POLICIES:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for t in self.STORED_POLICIES:
@@ -1224,26 +1260,49 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        update_one(loaded, stored)
+                        update_one(clean_loaded, stored)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_rules(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            res['template_id'] = list()
+            policies = list()
+            custom_policies = list()
+            # Keep only importing policies
+            for policy in res['policies']:
+                for importing_policy in self.POLICIES:
+                    if importing_policy['_id'] == policy:
+                        policies.append(policy)
+                        break
+            # Keep only custom actions for importing policies
+            for rec in res['custom_policies']:
+                for importing_policy in self.POLICIES:
+                    if importing_policy['_id'] == rec['policy']:
+                        custom_policies.append(rec)
+                        break
+            res['custom_policies'] = custom_policies
+            res['policies'] = policies
+            if not self.args.IMPORT_EXCLUDES:  # Clear excludes
+                res['filters'] = list()
+            return res
+
         def build_update(loaded, stored):
-            tmp = loaded
+            tmp = deepcopy(loaded)
             res = {"$set": {}}
 
-            if not self.args.IMPORT_EXCLUDES:  # Do not update excludes
+            if not self.args.IMPORT_EXCLUDES:  # Keep excludes
                 if "filters" in tmp.keys():
-                    tmp['filters'] = stored['filters']
+                    tmp['filters'] = deepcopy(stored['filters'])
 
-            if "policies" in tmp.keys():  # Do not update policies
-                tmp['policies'] = stored['policies']
+            if "policies" in tmp.keys():  # Keep update policies
+                tmp['policies'] = deepcopy(stored['policies'])
 
-            if "custom_policies" in tmp.keys():  # Do not update custom policy actions
-                tmp['custom_policies'] = stored['custom_policies']
+            if "custom_policies" in tmp.keys():  # Keep custom policy actions
+                tmp['custom_policies'] = deepcopy(stored['custom_policies'])
 
-            tags = stored["tags"]
+            tags = deepcopy(stored["tags"])
             if "tags" in tmp.keys() and tmp['tags']:  # Join new tags with stored ones
                 for t in tmp["tags"]:
                     if t not in tags:
@@ -1263,8 +1322,9 @@ class Run:
             return True  # Always update rule
 
         for loaded in self.RULES:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for t in self.STORED_RULES:
@@ -1273,11 +1333,15 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        update_one(loaded, stored)
+                        update_one(clean_loaded, stored)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_tags(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('tags', str(o['_id']), o)
 
@@ -1294,8 +1358,9 @@ class Run:
                     return loaded['revision'] > stored['revision']
 
         for loaded in self.TAGS:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for t in self.STORED_TAGS:
@@ -1304,11 +1369,15 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_blacklist_ip(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('blacklist.ip', str(o['_id']), o)
 
@@ -1316,8 +1385,9 @@ class Run:
             return loaded['last_modified'] > stored['last_modified']
 
         for loaded in self.BLACKLIST_IP:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for i in self.STORED_BLACKLIST_IP:
@@ -1326,11 +1396,15 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_blacklist_hosts(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('blacklist.hosts', str(o['_id']), o)
 
@@ -1347,8 +1421,9 @@ class Run:
                     return False
 
         for loaded in self.BLACKLIST_HOSTS:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for h in self.STORED_BLACKLIST_HOSTS:
@@ -1357,11 +1432,15 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
     def commit_firewall(self):
+        def clear(obj):
+            res = deepcopy(obj)
+            return res
+
         def replace_one(o):
             self.mongo.replace_one('ipset', str(o['_id']), o)
 
@@ -1369,8 +1448,9 @@ class Run:
             return loaded['last_modified'] > stored['last_modified']
 
         for loaded in self.FIREWALL:
+            clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
-                replace_one(loaded)
+                replace_one(clean_loaded)
             else:
                 stored = {}
                 for r in self.FIREWALL:
@@ -1379,9 +1459,9 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        replace_one(loaded)
+                        replace_one(clean_loaded)
                 else:
-                    replace_one(loaded)
+                    replace_one(clean_loaded)
 
 
 if __name__ == "__main__":
