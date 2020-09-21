@@ -98,7 +98,6 @@ def parse_cli_args(test_data=""):
     parser.add_argument('CLASS',
                         action='store',
                         choices=["all", "policies", "rules", "tags", "events", "alerts", "actions", "blacklist-ip", "blacklist-hosts", "firewall"],
-                        required=True,
                         help='Class of object(s) to export. Use "all" to export all the supported classes. Other classes will be exported only if needed')
     parser.add_argument('-f', '--folder',
                         action='store',
