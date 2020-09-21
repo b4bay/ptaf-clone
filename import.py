@@ -1207,8 +1207,8 @@ class Run:
         def replace_one(o):
             self.mongo.replace_one('policies', str(o['_id']), o)
 
-        def update_one(o):
-            self.mongo.update_one('policies', str(o['_id']), build_update(o))
+        def update_one(loaded, stored):
+            self.mongo.update_one('policies', str(o['_id']), build_update(loaded, stored))
 
         def is_newer(stored, loaded):
             return True  # Always update policies
@@ -1224,7 +1224,7 @@ class Run:
                         break
                 if stored:
                     if is_newer(stored, loaded):
-                        update_one(loaded)
+                        update_one(loaded, stored)
                 else:
                     replace_one(loaded)
 
