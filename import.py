@@ -677,14 +677,20 @@ class Run:
                           "RobotProtector", "RuleEngine", "RVPProtector", "ScriptEngine",
                           "SessionCookieProtector", "SQLiProtector", "WafJsProtector", "XMLProtector",
                           "XSSProtector"]
+            wafjs_modules = ["botdetector", "domauth", "domcleaner", "domdetective"]
             res = obj
-            res['template_id'] = None
             if not self.args.IMPORT_EXCLUDES:
+                # Clean policy filter
                 res['filters'] = list()
+                # Clean protectors' filters
                 for p in protectors:
                     if p in res.keys() and res[p]:
                         if 'filters' in res[p].keys():
                             res[p]['filters'] = list()
+                # Clean filters for WafJs modules
+                for m in wafjs_modules:
+                    if 'filters' in res["WafJsProtector"][m].keys():
+                        res["WafJsProtector"][m]['filters'] = list()
 
             return res
 
@@ -745,22 +751,21 @@ class Run:
         def clean(obj):
             res = obj
             res['template_id'] = list()
-            if rules_to_check is None:  # Do not clean policy for dependent rules
-                policies = list()
-                custom_policies = list()
-                # Leave only importing policies
-                for policy in res['policies']:
-                    for importing_policy in self.POLICIES:
-                        if importing_policy['_id'] == policy:
-                            policies.append(policy)
-                            break
-                for rec in res['custom_policies']:
-                    for importing_policy in self.POLICIES:
-                        if importing_policy['_id'] == rec['policy']:
-                            custom_policies.append(rec)
-                            break
-                res['custom_policies'] = custom_policies
-                res['policies'] = policies
+            policies = list()
+            custom_policies = list()
+            # Leave only importing policies
+            for policy in res['policies']:
+                for importing_policy in self.POLICIES:
+                    if importing_policy['_id'] == policy:
+                        policies.append(policy)
+                        break
+            for rec in res['custom_policies']:
+                for importing_policy in self.POLICIES:
+                    if importing_policy['_id'] == rec['policy']:
+                        custom_policies.append(rec)
+                        break
+            res['custom_policies'] = custom_policies
+            res['policies'] = policies
             if not self.args.IMPORT_EXCLUDES:
                 res['filters'] = list()
             return res

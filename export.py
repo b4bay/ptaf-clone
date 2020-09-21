@@ -575,8 +575,6 @@ class Run:
                 for m in wafjs_modules:
                     if 'filters' in res["WafJsProtector"][m].keys():
                         res["WafJsProtector"][m]['filters'] = list()
-                    if 'custom_filter' in res["WafJsProtector"][m].keys():
-                        res["WafJsProtector"][m]['custom_filter'] = None
 
             return res
 
