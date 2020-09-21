@@ -563,7 +563,6 @@ class Run:
                           "XSSProtector"]
             wafjs_modules = ["botdetector", "domauth", "domcleaner", "domdetective"]
             res = obj
-            res['template_id'] = None
             if not self.args.DUMP_EXCLUDES:  # Clean filters
                 # Clean policy filter
                 res['filters'] = list()
@@ -638,9 +637,19 @@ class Run:
         def clean(obj):
             res = obj
             res['template_id'] = list()
-            if rules_to_check is None:  # Do not clean policy for dependent rules
-                res['custom_policies'] = list()
-                res['policies'] = list()
+            # Filter rule custom policies
+            res['custom_policies'] = list()
+            for r in obj['custom_policies']:
+                for p in self.POLICIES:
+                    if p["_id"] == r["policy"]:  # Policy in the export scope, keep it
+                        res['custom_policies'].append(r)
+            # Filter rule policies
+            res['policies'] = list()
+            for r in obj['policies']:
+                for p in self.POLICIES:
+                    if p["_id"] == r:  # Policy in the export scope, keep it
+                        res['policies'].append(r)
+            # Clean excludes
             if not self.args.DUMP_EXCLUDES:
                 res['filters'] = list()
             return res
@@ -702,7 +711,7 @@ class Run:
                     if o["_id"] == rule_id:
                         if matched(o, dependent=True):
                             if o not in res:
-                                res.append(o)
+                                res.append(clean(o))
 
         # Process the list of candidates and extract dependencies (if any)
         dependent_tags = set()
