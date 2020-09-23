@@ -977,81 +977,90 @@ class Run:
     def load_tags(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.TAGS_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_TAGS.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_TAGS.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_policies(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.POLICIES_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_POLICIES.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_POLICIES.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_rules(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.RULES_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_RULES.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_RULES.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_events(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.EVENTS_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_EVENTS.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_EVENTS.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_alerts(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.ALERTS_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_ALERTS.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_ALERTS.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_actions(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.ACTIONS_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_ACTIONS.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_ACTIONS.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_blacklist_ip(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.BLACKLIST_IP_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_BLACKLIST_IP.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_BLACKLIST_IP.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_blacklist_hosts(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.BLACKLIST_HOSTS_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_BLACKLIST_HOSTS.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_BLACKLIST_HOSTS.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
     def load_firewall(self, form="yaml"):
         load_path = os.path.join(self.args.FOLDER, self.FIREWALL_DIR)
         if form == "yaml":
-            for filename in os.listdir(load_path):
-                if filename.endswith(".yml") or filename.endswith(".yaml"):
-                    self.LOADED_FIREWALL.append(load_from_yaml(os.path.join(load_path, filename)))
+            if os.path.exists(load_path):
+                for filename in os.listdir(load_path):
+                    if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.LOADED_FIREWALL.append(load_from_yaml(os.path.join(load_path, filename)))
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
