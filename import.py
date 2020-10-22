@@ -1485,4 +1485,8 @@ if __name__ == "__main__":
     # Commit data to storage
     r.commit()
 
+<<<<<<< HEAD
     print("DONE!")
+=======
+    print("DONE!")
+>>>>>>> 23ea0e02b42bdbfde0e1096e2daa989087b1f798
