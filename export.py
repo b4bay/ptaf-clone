@@ -30,7 +30,7 @@ yaml.SafeDumper.add_representer(type(None), null_representer)
 
 def store_as_yaml(obj, filename):
     with open(filename, "w") as out_file:
-        yaml.safe_dump(obj, out_file)
+        yaml.safe_dump(obj, out_file, default_flow_style=False)
 
 
 class MongoDB:
