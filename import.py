@@ -1278,6 +1278,7 @@ class Run:
             res['template_id'] = list()
             policies = list()
             custom_policies = list()
+            filters = list()
             # Keep only importing policies
             for policy in res['policies']:
                 for importing_policy in self.POLICIES:
@@ -1290,10 +1291,32 @@ class Run:
                     if importing_policy['_id'] == rec['policy']:
                         custom_policies.append(rec)
                         break
+            # Keep only filters for importing policies
+            for f in res['filters']:
+                is_by_policy_filter = False
+                if 'expr' in f.keys() and f['expr']:
+                    if 'and' in f['expr'].keys() and f['expr']['and']:
+                        if f['expr']['and'][0]['operator'] == '=':
+                            if 'variables' in f['expr']['and'][0].keys() and f['expr']['and'][0]['variables']:
+                                if f['expr']['and'][0]['variables'][0]['name'] == 'POLICY_ID':  # Filter for exact policy
+                                    is_by_policy_filter = True
+                                    filter_policy_id = f['expr']['and'][0]['value']
+                                    for importing_policy in self.POLICIES:
+                                        if str(importing_policy['_id']) == filter_policy_id:
+                                            filters.append(f)
+                                            break
+                if not is_by_policy_filter:  # Not a by-policy filter, keep it
+                    filters.append(f)
+
+
+
+
             res['custom_policies'] = custom_policies
             res['policies'] = policies
             if not self.args.IMPORT_EXCLUDES:  # Clear excludes
                 res['filters'] = list()
+            else:
+                res['filters'] = filters
             return res
 
         def build_update(loaded, stored):
