@@ -166,14 +166,14 @@ def parse_cli_args(test_data=""):
                         help='Actions to import, comma-separated list of IDs or name regex. Use NONE to do not import any. By default only actions required by other objects will be imported')
     parser.add_argument('-b', '--blacklist-ip',
                         action='store',
-                        dest='BLACKLIST',
+                        dest='IMPORT_BLACKLIST',
                         choices=["all", "proxy", "vpn", "tor", "custom"],
                         default='all',
                         required=False,
                         help='Type of blacklisted IP record to import. By default all records will be imported')
     parser.add_argument('--firewall',
                         action='store',
-                        dest='FIREWALL',
+                        dest='IMPORT_FIREWALL',
                         choices=["all", "firewall", "arbor", "checkpoint", "qrator"],
                         default='all',
                         required=False,
@@ -207,8 +207,6 @@ def parse_cli_args(test_data=""):
     del args.EVENTS
     del args.ALERTS
     del args.ACTIONS
-    del args.BLACKLIST
-    del args.FIREWALL
 
     return args
 
