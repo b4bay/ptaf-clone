@@ -102,8 +102,7 @@ class Run:
         self.STORED_RULES = list()
 
     def bootstrap(self):
-        custom_objects = re.compile("^\\[.*", re.IGNORECASE)
-        filt = {"name": {"$not": custom_objects}}
+        filt = {"_is_system": True}
         self.STORED_ALERTS = self.mongo.fetch_all('alerts', filt=filt)
         self.STORED_RULES = self.mongo.fetch_all('rules', filt=filt)
 
