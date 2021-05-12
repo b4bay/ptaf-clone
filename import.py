@@ -367,23 +367,23 @@ class Run:
             self.go_single()
 
         if len(self.ACTIONS) > 0:
-            self.log("{} actions are eligible for import".format(self.ACTIONS), 1)
+            self.log("{} actions are eligible for import".format(len(self.ACTIONS)), 1)
         if len(self.ALERTS) > 0:
-            self.log("{} alerts are eligible for import".format(self.ALERTS), 1)
+            self.log("{} alerts are eligible for import".format(len(self.ALERTS)), 1)
         if len(self.EVENTS) > 0:
-            self.log("{} events are eligible for import".format(self.EVENTS), 1)
+            self.log("{} events are eligible for import".format(len(self.EVENTS)), 1)
         if len(self.POLICIES) > 0:
-            self.log("{} policies are eligible for import".format(self.POLICIES), 1)
+            self.log("{} policies are eligible for import".format(len(self.POLICIES)), 1)
         if len(self.RULES) > 0:
-            self.log("{} rules are eligible for import".format(self.RULES), 1)
+            self.log("{} rules are eligible for import".format(len(self.RULES)), 1)
         if len(self.TAGS) > 0:
-            self.log("{} tags are eligible for import".format(self.TAGS), 1)
+            self.log("{} tags are eligible for import".format(len(self.TAGS)), 1)
         if len(self.BLACKLIST_IP) > 0:
-            self.log("{} blacklisted IP are eligible for import".format(self.BLACKLIST_IP), 1)
+            self.log("{} blacklisted IP are eligible for import".format(len(self.BLACKLIST_IP)), 1)
         if len(self.BLACKLIST_HOSTS) > 0:
-            self.log("{} blacklisted hostnames are eligible for import".format(self.BLACKLIST_HOSTS), 1)
+            self.log("{} blacklisted hostnames are eligible for import".format(len(self.BLACKLIST_HOSTS)), 1)
         if len(self.FIREWALL) > 0:
-            self.log("{} firewalled IP are eligible for import".format(self.FIREWALL), 1)
+            self.log("{} firewalled IP are eligible for import".format(len(self.FIREWALL)), 1)
 
 
     # Methods to get data for import
@@ -1144,61 +1144,61 @@ class Run:
     def load(self, form="yaml"):
         loaded_count = self.load_tags(form)
         if loaded_count > 0:
-            print("Loaded {} tags from files".format(loaded_count), 1)
+            self.log("Loaded {} tags from files".format(loaded_count), 1)
         loaded_count = self.load_policies(form)
         if loaded_count > 0:
-            print("Loaded {} policies from files".format(loaded_count), 1)
+            self.log("Loaded {} policies from files".format(loaded_count), 1)
         loaded_count = self.load_rules(form)
         if loaded_count > 0:
-            print("Loaded {} rules from files".format(loaded_count), 1)
+            self.log("Loaded {} rules from files".format(loaded_count), 1)
         loaded_count = self.load_events(form)
         if loaded_count > 0:
-            print("Loaded {} events from files".format(loaded_count), 1)
+            self.log("Loaded {} events from files".format(loaded_count), 1)
         loaded_count = self.load_alerts(form)
         if loaded_count > 0:
-            print("Loaded {} alerts from files".format(loaded_count), 1)
+            self.log("Loaded {} alerts from files".format(loaded_count), 1)
         loaded_count = self.load_actions(form)
         if loaded_count > 0:
-            print("Loaded {} actions from files".format(loaded_count), 1)
+            self.log("Loaded {} actions from files".format(loaded_count), 1)
         loaded_count = self.load_blacklist_ip(form)
         if loaded_count > 0:
-            print("Loaded {} blacklisted IP from files".format(loaded_count), 1)
+            self.log("Loaded {} blacklisted IP from files".format(loaded_count), 1)
         loaded_count = self.load_blacklist_hosts(form)
         if loaded_count > 0:
-            print("Loaded {} blacklisted hostnames from files".format(loaded_count), 1)
+            self.log("Loaded {} blacklisted hostnames from files".format(loaded_count), 1)
         loaded_count = self.load_firewall(form)
         if loaded_count > 0:
-            print("Loaded {} firewalled IP from files".format(loaded_count), 1)
+            self.log("Loaded {} firewalled IP from files".format(loaded_count), 1)
 
     # Methods for DB update
     def commit(self):
         updated_count = self.commit_actions()
         if updated_count > 0:
-            print("Updated {} actions".format(updated_count), 1)
+            self.log("Updated {} actions".format(updated_count), 1)
         updated_count = self.commit_alerts()
         if updated_count > 0:
-            print("Updated {} alerts".format(updated_count), 1)
+            self.log("Updated {} alerts".format(updated_count), 1)
         updated_count = self.commit_events()
         if updated_count > 0:
-            print("Updated {} events".format(updated_count), 1)
+            self.log("Updated {} events".format(updated_count), 1)
         updated_count = self.commit_policies()
         if updated_count > 0:
-            print("Updated {} policies".format(updated_count), 1)
+            self.log("Updated {} policies".format(updated_count), 1)
         updated_count = self.commit_rules()
         if updated_count > 0:
-            print("Updated {} rules".format(updated_count), 1)
+            self.log("Updated {} rules".format(updated_count), 1)
         updated_count = self.commit_tags()
         if updated_count > 0:
-            print("Updated {} tags".format(updated_count), 1)
+            self.log("Updated {} tags".format(updated_count), 1)
         updated_count = self.commit_blacklist_ip()
         if updated_count > 0:
-            print("Updated {} balcklisted IP".format(updated_count), 1)
+            self.log("Updated {} balcklisted IP".format(updated_count), 1)
         updated_count = self.commit_blacklist_hosts()
         if updated_count > 0:
-            print("Updated {} blacklisted hostnames".format(updated_count), 1)
+            self.log("Updated {} blacklisted hostnames".format(updated_count), 1)
         updated_count = self.commit_firewall()
         if updated_count > 0:
-            print("Updated {} firewalled IP".format(updated_count), 1)
+            self.log("Updated {} firewalled IP".format(updated_count), 1)
 
     def commit_actions(self):
         def clear(obj):
