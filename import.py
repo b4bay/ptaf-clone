@@ -188,6 +188,11 @@ def parse_cli_args(test_data=""):
                         dest='FORCE_REPLACE',
                         required=False,
                         help='Force replace existing objects. By default existing objects will be updated by newer data only')
+    parser.add_argument('--debug',
+                        action='store_true',
+                        dest='DEBUG',
+                        required=False,
+                        help='Debug output')
 
     if test_data:
         args = parser.parse_args(test_data)
@@ -253,6 +258,15 @@ class Run:
         self.BLACKLIST_IP = list()
         self.BLACKLIST_HOSTS = list()
         self.FIREWALL = list()
+
+    def debug(self, s, indent=2):
+        tabs = "\t" * indent
+        if self.args.DEBUG:
+            print(tabs+"[.] {}".format(s))
+
+    def log(self, s, indent=0):
+        tabs = "\t" * indent
+        print(tabs+"[+] {}".format(s))
 
     def bootstrap(self):
         self.STORED_ACTIONS = self.mongo.fetch_all('actions')
@@ -351,6 +365,26 @@ class Run:
             self.go_all()
         else:
             self.go_single()
+
+        if len(self.ACTIONS) > 0:
+            self.log("{} actions are eligible for import".format(self.ACTIONS), 1)
+        if len(self.ALERTS) > 0:
+            self.log("{} alerts are eligible for import".format(self.ALERTS), 1)
+        if len(self.EVENTS) > 0:
+            self.log("{} events are eligible for import".format(self.EVENTS), 1)
+        if len(self.POLICIES) > 0:
+            self.log("{} policies are eligible for import".format(self.POLICIES), 1)
+        if len(self.RULES) > 0:
+            self.log("{} rules are eligible for import".format(self.RULES), 1)
+        if len(self.TAGS) > 0:
+            self.log("{} tags are eligible for import".format(self.TAGS), 1)
+        if len(self.BLACKLIST_IP) > 0:
+            self.log("{} blacklisted IP are eligible for import".format(self.BLACKLIST_IP), 1)
+        if len(self.BLACKLIST_HOSTS) > 0:
+            self.log("{} blacklisted hostnames are eligible for import".format(self.BLACKLIST_HOSTS), 1)
+        if len(self.FIREWALL) > 0:
+            self.log("{} firewalled IP are eligible for import".format(self.FIREWALL), 1)
+
 
     # Methods to get data for import
     def get_actions(self, actions_to_check=None):
@@ -973,117 +1007,198 @@ class Run:
 
     # Methods to load data
     def load_tags(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.TAGS_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_TAGS.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_policies(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.POLICIES_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_POLICIES.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_rules(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.RULES_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_RULES.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_events(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.EVENTS_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_EVENTS.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_alerts(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.ALERTS_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_ALERTS.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_actions(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.ACTIONS_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_ACTIONS.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_blacklist_ip(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.BLACKLIST_IP_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_BLACKLIST_IP.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_blacklist_hosts(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.BLACKLIST_HOSTS_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_BLACKLIST_HOSTS.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load_firewall(self, form="yaml"):
+        counter = 0
         load_path = os.path.join(self.args.FOLDER, self.FIREWALL_DIR)
         if form == "yaml":
             if os.path.exists(load_path):
                 for filename in os.listdir(load_path):
                     if filename.endswith(".yml") or filename.endswith(".yaml"):
+                        self.debug("Processing file {}".format(os.path.join(load_path, filename)))
                         self.LOADED_FIREWALL.append(load_from_yaml(os.path.join(load_path, filename)))
+                        counter += 1
         else:
             raise NotImplementedError("Load as {} isn't implemented".format(form))
 
+        return counter
+
     def load(self, form="yaml"):
-        self.load_tags(form)
-        self.load_policies(form)
-        self.load_rules(form)
-        self.load_events(form)
-        self.load_alerts(form)
-        self.load_actions(form)
-        self.load_blacklist_ip(form)
-        self.load_blacklist_hosts(form)
-        self.load_firewall(form)
+        loaded_count = self.load_tags(form)
+        if loaded_count > 0:
+            print("Loaded {} tags from files".format(loaded_count), 1)
+        loaded_count = self.load_policies(form)
+        if loaded_count > 0:
+            print("Loaded {} policies from files".format(loaded_count), 1)
+        loaded_count = self.load_rules(form)
+        if loaded_count > 0:
+            print("Loaded {} rules from files".format(loaded_count), 1)
+        loaded_count = self.load_events(form)
+        if loaded_count > 0:
+            print("Loaded {} events from files".format(loaded_count), 1)
+        loaded_count = self.load_alerts(form)
+        if loaded_count > 0:
+            print("Loaded {} alerts from files".format(loaded_count), 1)
+        loaded_count = self.load_actions(form)
+        if loaded_count > 0:
+            print("Loaded {} actions from files".format(loaded_count), 1)
+        loaded_count = self.load_blacklist_ip(form)
+        if loaded_count > 0:
+            print("Loaded {} blacklisted IP from files".format(loaded_count), 1)
+        loaded_count = self.load_blacklist_hosts(form)
+        if loaded_count > 0:
+            print("Loaded {} blacklisted hostnames from files".format(loaded_count), 1)
+        loaded_count = self.load_firewall(form)
+        if loaded_count > 0:
+            print("Loaded {} firewalled IP from files".format(loaded_count), 1)
 
     # Methods for DB update
     def commit(self):
-        self.commit_actions()
-        self.commit_alerts()
-        self.commit_events()
-        self.commit_policies()
-        self.commit_rules()
-        self.commit_tags()
-        self.commit_blacklist_ip()
-        self.commit_blacklist_hosts()
-        self.commit_firewall()
+        updated_count = self.commit_actions()
+        if updated_count > 0:
+            print("Updated {} actions".format(updated_count), 1)
+        updated_count = self.commit_alerts()
+        if updated_count > 0:
+            print("Updated {} alerts".format(updated_count), 1)
+        updated_count = self.commit_events()
+        if updated_count > 0:
+            print("Updated {} events".format(updated_count), 1)
+        updated_count = self.commit_policies()
+        if updated_count > 0:
+            print("Updated {} policies".format(updated_count), 1)
+        updated_count = self.commit_rules()
+        if updated_count > 0:
+            print("Updated {} rules".format(updated_count), 1)
+        updated_count = self.commit_tags()
+        if updated_count > 0:
+            print("Updated {} tags".format(updated_count), 1)
+        updated_count = self.commit_blacklist_ip()
+        if updated_count > 0:
+            print("Updated {} balcklisted IP".format(updated_count), 1)
+        updated_count = self.commit_blacklist_hosts()
+        if updated_count > 0:
+            print("Updated {} blacklisted hostnames".format(updated_count), 1)
+        updated_count = self.commit_firewall()
+        if updated_count > 0:
+            print("Updated {} firewalled IP".format(updated_count), 1)
 
     def commit_actions(self):
         def clear(obj):
@@ -1105,10 +1220,13 @@ class Run:
                 else:  # Compare revisions
                     return loaded['revision'] > stored['revision']
 
+        counter = 0
         for loaded in self.ACTIONS:
+            self.debug("Updating action {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for a in self.STORED_ACTIONS:
@@ -1118,8 +1236,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_alerts(self):
         def clear(obj):
@@ -1141,10 +1263,13 @@ class Run:
                 else:  # Compare revisions
                     return loaded['revision'] > stored['revision']
 
+        counter = 0
         for loaded in self.ALERTS:
+            self.debug("Updating alert {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for a in self.STORED_ALERTS:
@@ -1154,8 +1279,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_events(self):
         def clear(obj):
@@ -1177,10 +1306,13 @@ class Run:
                 else:  # Compare revisions
                     return loaded['revision'] > stored['revision']
 
+        counter = 0
         for loaded in self.EVENTS:
+            self.debug("Updating event {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for e in self.STORED_EVENTS:
@@ -1190,8 +1322,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_policies(self):
         def clear(obj):
@@ -1254,10 +1390,13 @@ class Run:
         def is_newer(stored, loaded):
             return True  # Always update policies
 
+        counter = 0
         for loaded in self.POLICIES:
+            self.debug("Updating policy {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for t in self.STORED_POLICIES:
@@ -1267,8 +1406,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         update_one(clean_loaded, stored)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_rules(self):
         def clear(obj):
@@ -1350,10 +1493,13 @@ class Run:
         def is_newer(stored, loaded):
             return True  # Always update rule
 
+        counter = 0
         for loaded in self.RULES:
+            self.debug("Updating rule {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for t in self.STORED_RULES:
@@ -1363,8 +1509,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         update_one(clean_loaded, stored)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_tags(self):
         def clear(obj):
@@ -1386,10 +1536,13 @@ class Run:
                 else:  # Compare revisions
                     return loaded['revision'] > stored['revision']
 
+        counter = 0
         for loaded in self.TAGS:
+            self.debug("Updating tag {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for t in self.STORED_TAGS:
@@ -1399,8 +1552,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_blacklist_ip(self):
         def clear(obj):
@@ -1413,10 +1570,13 @@ class Run:
         def is_newer(stored, loaded):
             return loaded['last_modified'] > stored['last_modified']
 
+        counter = 0
         for loaded in self.BLACKLIST_IP:
+            self.debug("Updating blacklisted IP {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for i in self.STORED_BLACKLIST_IP:
@@ -1426,8 +1586,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_blacklist_hosts(self):
         def clear(obj):
@@ -1449,10 +1613,13 @@ class Run:
                 else:  # Both objects are from-the-box
                     return False
 
+        counter = 0
         for loaded in self.BLACKLIST_HOSTS:
+            self.debug("Updating blacklisted hostname {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for h in self.STORED_BLACKLIST_HOSTS:
@@ -1462,8 +1629,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
     def commit_firewall(self):
         def clear(obj):
@@ -1476,10 +1647,13 @@ class Run:
         def is_newer(stored, loaded):
             return loaded['last_modified'] > stored['last_modified']
 
+        counter = 0
         for loaded in self.FIREWALL:
+            self.debug("Updating firewalled IP {}".format(str(loaded['_id'])))
             clean_loaded = clear(loaded)
             if self.args.FORCE_REPLACE:  # Forcing update all the objects
                 replace_one(clean_loaded)
+                counter += 1
             else:
                 stored = {}
                 for r in self.FIREWALL:
@@ -1489,8 +1663,12 @@ class Run:
                 if stored:
                     if is_newer(stored, loaded):
                         replace_one(clean_loaded)
+                        counter += 1
                 else:
                     replace_one(clean_loaded)
+                    counter += 1
+
+        return counter
 
 
 if __name__ == "__main__":
@@ -1498,12 +1676,17 @@ if __name__ == "__main__":
     r.bootstrap()
 
     # Load from files
+    r.log("Loading ruleset from files ...")
     r.load()
+    r.log("DONE")
 
     # Get data
+    r.log("Making subset to import ...")
     r.go()
+    r.log("DONE")
 
     # Commit data to storage
+    r.log("Committing changes to MongoDB ...")
     r.commit()
+    r.log("DONE")
 
-    print("DONE!")
