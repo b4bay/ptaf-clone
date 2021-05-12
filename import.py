@@ -1835,6 +1835,26 @@ class Run:
 
         return len(res)
 
+    def get_extra_rules_from_imported(self):
+        res = list()
+        for stored in self.STORED_RULES:
+            found = False
+            for imported in self.RULES:
+                if str(stored['_id']) == str(imported['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Rule {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.RULES_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.RULES_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
     def get_extra_events(self):
         res = list()
         for stored in self.STORED_EVENTS:
@@ -2157,7 +2177,7 @@ if __name__ == "__main__":
     # Removing extra rules if importing 'policies'
     if r.args.CLASS == "policies":
         r.log("Getting extra objects ...")
-        r.get_extra_rules()
+        r.get_extra_rules_from_imported()
         r.log("DONE\n")
         r.delete_system()
         r.delete_custom()
