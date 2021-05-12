@@ -204,22 +204,22 @@ def parse_cli_args(test_data=""):
                         action='store_true',
                         dest='DELETE_EXTRA_CUSTOM',
                         required=False,
-                        help='Delete custom objects exist in database and absent in ruleset')
+                        help='Delete custom objects exist in database but absent in ruleset')
     parser.add_argument('--disable-extra-custom',
                         action='store_true',
                         dest='DISABLE_EXTRA_CUSTOM',
                         required=False,
-                        help='Disable custom rules and alerts exist in database and absent in ruleset. Objects of other types will be left unchanged')
+                        help='Disable custom rules and alerts exist in database but absent in ruleset')
     parser.add_argument('--delete-extra-system',
                         action='store_true',
                         dest='DELETE_EXTRA_SYSTEM',
                         required=False,
-                        help='Delete system objects exist in database and absent in ruleset')
+                        help='Delete system objects exist in database but absent in ruleset')
     parser.add_argument('--disable-extra-system',
                         action='store_true',
                         dest='DISABLE_EXTRA_SYSTEM',
                         required=False,
-                        help='Disable system rules and alerts exist in database and absent in ruleset. Objects of other types will be left unchanged')
+                        help='Disable system rules and alerts exist in database but absent in ruleset')
     parser.add_argument('--debug',
                         action='store_true',
                         dest='DEBUG',
@@ -305,7 +305,8 @@ class Run:
         self.BLACKLIST_IP_EXTRA = list()
         self.BLACKLIST_HOSTS_EXTRA = list()
         self.FIREWALL_EXTRA = list()
-        self.NEED_EXTRA_PROCESSING = self.args.DELETE_EXTRA_CUSTOM or self.args.DISABLE_EXTRA_CUSTOM or self.args.DELETE_EXTRA_SYSTEM or self.args.DISABLE_EXTRA_CUSTOM
+        self.NEED_EXTRA_PROCESSING = self.args.DELETE_EXTRA_CUSTOM or self.args.DISABLE_EXTRA_CUSTOM \
+                                     or self.args.DELETE_EXTRA_SYSTEM or self.args.DISABLE_EXTRA_CUSTOM
 
     def debug(self, s, indent=2):
         tabs = "    " * indent
@@ -1924,16 +1925,211 @@ class Run:
 
     # Methods to get rid of extra objects
     def delete_system(self):
-        self.log("Stub for delete_system")
+        self.log("Deleting system extra objects ...")
+        deleted_total = 0
+
+        deleted_count = 0
+        for str_id in self.ALERTS_EXTRA_SYSTEM:
+            self.debug("Deleting system alert {}".format(str_id))
+            self.mongo.delete_one('alerts', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} system alerts".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.EVENTS_EXTRA_SYSTEM:
+            self.debug("Deleting system event {}".format(str_id))
+            self.mongo.delete_one('events', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} system events".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.RULES_EXTRA_SYSTEM:
+            self.debug("Deleting system rule {}".format(str_id))
+            self.mongo.delete_one('rules', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} system rules".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.TAGS_EXTRA_SYSTEM:
+            self.debug("Deleting system tag {}".format(str_id))
+            self.mongo.delete_one('tags', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} system tags".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.ACTIONS_EXTRA_SYSTEM:
+            self.debug("Deleting system action {}".format(str_id))
+            self.mongo.delete_one('actions', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} system actions".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.POLICIES_EXTRA_SYSTEM:
+            self.debug("Deleting system policy {}".format(str_id))
+            self.mongo.delete_one('policies', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} system policies".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        if deleted_total == 0:
+            self.log("Nothing to delete", 1)
+
+        self.log("DONE")
 
     def delete_custom(self):
-        self.log("Stub for delete_custom")
+        self.log("Deleting custom extra objects ...")
+        deleted_total = 0
+
+        deleted_count = 0
+        for str_id in self.FIREWALL_EXTRA:
+            self.debug("Deleting firewalled IP {}".format(str_id))
+            self.mongo.delete_one('ipset', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom firewalled IP".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.BLACKLIST_HOSTS_EXTRA:
+            self.debug("Deleting blacklisted host {}".format(str_id))
+            self.mongo.delete_one('blacklist.hosts', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom blacklisted hosts".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.BLACKLIST_IP_EXTRA:
+            self.debug("Deleting blacklisted IP {}".format(str_id))
+            self.mongo.delete_one('blacklist.ip', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom blacklisted IP".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.ALERTS_EXTRA_CUSTOM:
+            self.debug("Deleting custom alert {}".format(str_id))
+            self.mongo.delete_one('alerts', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom alerts".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.EVENTS_EXTRA_CUSTOM:
+            self.debug("Deleting custom event {}".format(str_id))
+            self.mongo.delete_one('events', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom events".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.RULES_EXTRA_CUSTOM:
+            self.debug("Deleting custom rule {}".format(str_id))
+            self.mongo.delete_one('rules', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom rules".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.TAGS_EXTRA_CUSTOM:
+            self.debug("Deleting custom tag {}".format(str_id))
+            self.mongo.delete_one('tags', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom tags".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.ACTIONS_EXTRA_CUSTOM:
+            self.debug("Deleting custom action {}".format(str_id))
+            self.mongo.delete_one('actions', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom actions".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        deleted_count = 0
+        for str_id in self.POLICIES_EXTRA_CUSTOM:
+            self.debug("Deleting custom policy {}".format(str_id))
+            self.mongo.delete_one('policies', str_id)
+            deleted_count += 1
+        if deleted_count > 0:
+            self.log("Deleted {} custom policies".format(deleted_count), 1)
+        deleted_total += deleted_count
+
+        if deleted_total == 0:
+            self.log("Nothing to delete", 1)
+
+        self.log("DONE")
 
     def disable_system(self):
-        self.log("Stub for disable_system")
+        self.log("Disabling system extra objects ...")
+        disabled_total = 0
+
+        disabled_count = 0
+        for str_id in self.ALERTS_EXTRA_SYSTEM:
+            self.debug("Disabling system alert {}".format(str_id))
+            self.mongo.update_one('alerts', str_id, {'enabled': False})
+            disabled_count += 1
+        if disabled_count > 0:
+            self.log("Disabled {} system alerts".format(disabled_count), 1)
+        disabled_total += disabled_count
+
+        disabled_count = 0
+        for str_id in self.RULES_EXTRA_SYSTEM:
+            self.debug("Disabling system rules {}".format(str_id))
+            self.mongo.update_one('rules', str_id, {'enabled': False})
+            disabled_count += 1
+        if disabled_count > 0:
+            self.log("Disabled {} system rules".format(disabled_count), 1)
+        disabled_total += disabled_count
+
+        if disabled_total == 0:
+            self.log("Nothing to disable", 1)
+
+        self.log("DONE")
 
     def disable_custom(self):
-        self.log("Stub for disable_custom")
+        self.log("Disabling custom extra objects ...")
+        disabled_total = 0
+
+        disabled_count = 0
+        for str_id in self.ALERTS_EXTRA_CUSTOM:
+            self.debug("Disabling custom alert {}".format(str_id))
+            self.mongo.update_one('alerts', str_id, {'enabled': False})
+            disabled_count += 1
+        if disabled_count > 0:
+            self.log("Disabled {} custom alerts".format(disabled_count), 1)
+        disabled_total += disabled_count
+
+        disabled_count = 0
+        for str_id in self.RULES_EXTRA_CUSTOM:
+            self.debug("Disabling custom rules {}".format(str_id))
+            self.mongo.update_one('rules', str_id, {'enabled': False})
+            disabled_count += 1
+        if disabled_count > 0:
+            self.log("Disabled {} custom rules".format(disabled_count), 1)
+        disabled_total += disabled_count
+
+        if disabled_total == 0:
+            self.log("Nothing to disable", 1)
+
+        self.log("DONE")
 
 
 if __name__ == "__main__":
@@ -1943,17 +2139,17 @@ if __name__ == "__main__":
     # Load from files
     r.log("Loading ruleset from files ...")
     r.load()
-    r.log("DONE")
+    r.log("DONE\n")
 
     # Get data
     r.log("Making subset to import ...")
     r.go()
-    r.log("DONE")
+    r.log("DONE\n")
 
     # Commit data to storage
     r.log("Committing changes to MongoDB ...")
     r.commit()
-    r.log("DONE")
+    r.log("DONE\n")
 
     # Process extra objects if needed
     if r.NEED_EXTRA_PROCESSING:
@@ -1970,3 +2166,5 @@ if __name__ == "__main__":
             r.delete_system()
         if r.args.DELETE_EXTRA_CUSTOM:
             r.delete_custom()
+
+    r.log("DONE. Import successfully completed.")
