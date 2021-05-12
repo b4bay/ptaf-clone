@@ -41,7 +41,8 @@ class MongoDB:
         else:
             try:
                 process = subprocess.Popen(
-                    ["sudo /usr/local/bin/wsc -c 'cluster list mongo' | /bin/grep 'mongodb://' | /usr/bin/awk '{print $2}'"],
+                    [
+                        "sudo /usr/local/bin/wsc -c 'cluster list mongo' | /bin/grep 'mongodb://' | /usr/bin/awk '{print $2}'"],
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT)
@@ -102,6 +103,17 @@ class MongoDB:
 
         storage = self.db[collection_name]
         storage.find_one_and_update(filter, update)
+
+    def delete_one(self, collection_name, filter):
+        if type(filter) == str:  # Means filter by ObjectId
+            try:
+                filter = {"_id": ObjectId(filter)}
+            except InvalidId:
+                print("[!] Object ID {} is invalid, ignoring".format(filter))
+                return
+
+        storage = self.db[collection_name]
+        storage.delete_one(filter)
 
 
 def parse_cli_args(test_data=""):
@@ -188,6 +200,26 @@ def parse_cli_args(test_data=""):
                         dest='FORCE_REPLACE',
                         required=False,
                         help='Force replace existing objects. By default existing objects will be updated by newer data only')
+    parser.add_argument('--delete-extra-custom',
+                        action='store_true',
+                        dest='DELETE_EXTRA_CUSTOM',
+                        required=False,
+                        help='Delete custom objects exist in database and absent in ruleset')
+    parser.add_argument('--disable-extra-custom',
+                        action='store_true',
+                        dest='DISABLE_EXTRA_CUSTOM',
+                        required=False,
+                        help='Disable custom rules and alerts exist in database and absent in ruleset. Objects of other types will be left unchanged')
+    parser.add_argument('--delete-extra-system',
+                        action='store_true',
+                        dest='DELETE_EXTRA_SYSTEM',
+                        required=False,
+                        help='Delete system objects exist in database and absent in ruleset')
+    parser.add_argument('--disable-extra-system',
+                        action='store_true',
+                        dest='DISABLE_EXTRA_SYSTEM',
+                        required=False,
+                        help='Disable system rules and alerts exist in database and absent in ruleset. Objects of other types will be left unchanged')
     parser.add_argument('--debug',
                         action='store_true',
                         dest='DEBUG',
@@ -258,15 +290,31 @@ class Run:
         self.BLACKLIST_IP = list()
         self.BLACKLIST_HOSTS = list()
         self.FIREWALL = list()
+        self.ACTIONS_EXTRA_CUSTOM = list()
+        self.ACTIONS_EXTRA_SYSTEM = list()
+        self.ALERTS_EXTRA_CUSTOM = list()
+        self.ALERTS_EXTRA_SYSTEM = list()
+        self.EVENTS_EXTRA_CUSTOM = list()
+        self.EVENTS_EXTRA_SYSTEM = list()
+        self.POLICIES_EXTRA_SYSTEM = list()
+        self.POLICIES_EXTRA_CUSTOM = list()
+        self.RULES_EXTRA_CUSTOM = list()
+        self.RULES_EXTRA_SYSTEM = list()
+        self.TAGS_EXTRA_CUSTOM = list()
+        self.TAGS_EXTRA_SYSTEM = list()
+        self.BLACKLIST_IP_EXTRA = list()
+        self.BLACKLIST_HOSTS_EXTRA = list()
+        self.FIREWALL_EXTRA = list()
+        self.NEED_EXTRA_PROCESSING = self.args.DELETE_EXTRA_CUSTOM or self.args.DISABLE_EXTRA_CUSTOM or self.args.DELETE_EXTRA_SYSTEM or self.args.DISABLE_EXTRA_CUSTOM
 
     def debug(self, s, indent=2):
-        tabs = "\t" * indent
+        tabs = "    " * indent
         if self.args.DEBUG:
-            print(tabs+"[.] {}".format(s))
+            print(tabs + "[.] {}".format(s))
 
     def log(self, s, indent=0):
-        tabs = "\t" * indent
-        print(tabs+"[+] {}".format(s))
+        tabs = "    " * indent
+        print(tabs + "[+] {}".format(s))
 
     def bootstrap(self):
         self.STORED_ACTIONS = self.mongo.fetch_all('actions')
@@ -286,13 +334,13 @@ class Run:
             (actions_from_alerts, events) = self.get_alerts()
             (rules, tags_from_events) = self.get_events(events)
             (actions_from_rules, tags_from_rules) = self.get_rules(rules)
-            self.get_actions(actions_from_alerts+actions_from_rules)
-            self.get_tags(tags_from_events+tags_from_rules)
+            self.get_actions(actions_from_alerts + actions_from_rules)
+            self.get_tags(tags_from_events + tags_from_rules)
         elif self.args.CLASS == "events":
             (rules, tags_from_events) = self.get_events()
             (actions, tags_from_rules) = self.get_rules(rules)
             self.get_actions(actions)
-            self.get_tags(tags_from_events+tags_from_rules)
+            self.get_tags(tags_from_events + tags_from_rules)
         elif self.args.CLASS == "policies":
             rules = self.get_policies()
             (actions, tags) = self.get_rules(rules)
@@ -366,25 +414,24 @@ class Run:
         else:
             self.go_single()
 
-        if len(self.ACTIONS) > 0:
-            self.log("{} actions are eligible for import".format(len(self.ACTIONS)), 1)
-        if len(self.ALERTS) > 0:
-            self.log("{} alerts are eligible for import".format(len(self.ALERTS)), 1)
-        if len(self.EVENTS) > 0:
-            self.log("{} events are eligible for import".format(len(self.EVENTS)), 1)
         if len(self.POLICIES) > 0:
             self.log("{} policies are eligible for import".format(len(self.POLICIES)), 1)
-        if len(self.RULES) > 0:
-            self.log("{} rules are eligible for import".format(len(self.RULES)), 1)
+        if len(self.ACTIONS) > 0:
+            self.log("{} actions are eligible for import".format(len(self.ACTIONS)), 1)
         if len(self.TAGS) > 0:
             self.log("{} tags are eligible for import".format(len(self.TAGS)), 1)
+        if len(self.RULES) > 0:
+            self.log("{} rules are eligible for import".format(len(self.RULES)), 1)
+        if len(self.EVENTS) > 0:
+            self.log("{} events are eligible for import".format(len(self.EVENTS)), 1)
+        if len(self.ALERTS) > 0:
+            self.log("{} alerts are eligible for import".format(len(self.ALERTS)), 1)
         if len(self.BLACKLIST_IP) > 0:
             self.log("{} blacklisted IP are eligible for import".format(len(self.BLACKLIST_IP)), 1)
         if len(self.BLACKLIST_HOSTS) > 0:
             self.log("{} blacklisted hostnames are eligible for import".format(len(self.BLACKLIST_HOSTS)), 1)
         if len(self.FIREWALL) > 0:
             self.log("{} firewalled IP are eligible for import".format(len(self.FIREWALL)), 1)
-
 
     # Methods to get data for import
     def get_actions(self, actions_to_check=None):
@@ -1142,12 +1189,15 @@ class Run:
         return counter
 
     def load(self, form="yaml"):
-        loaded_count = self.load_tags(form)
-        if loaded_count > 0:
-            self.log("Loaded {} tags from files".format(loaded_count), 1)
         loaded_count = self.load_policies(form)
         if loaded_count > 0:
             self.log("Loaded {} policies from files".format(loaded_count), 1)
+        loaded_count = self.load_actions(form)
+        if loaded_count > 0:
+            self.log("Loaded {} actions from files".format(loaded_count), 1)
+        loaded_count = self.load_tags(form)
+        if loaded_count > 0:
+            self.log("Loaded {} tags from files".format(loaded_count), 1)
         loaded_count = self.load_rules(form)
         if loaded_count > 0:
             self.log("Loaded {} rules from files".format(loaded_count), 1)
@@ -1157,9 +1207,6 @@ class Run:
         loaded_count = self.load_alerts(form)
         if loaded_count > 0:
             self.log("Loaded {} alerts from files".format(loaded_count), 1)
-        loaded_count = self.load_actions(form)
-        if loaded_count > 0:
-            self.log("Loaded {} actions from files".format(loaded_count), 1)
         loaded_count = self.load_blacklist_ip(form)
         if loaded_count > 0:
             self.log("Loaded {} blacklisted IP from files".format(loaded_count), 1)
@@ -1172,24 +1219,24 @@ class Run:
 
     # Methods for DB update
     def commit(self):
-        updated_count = self.commit_actions()
-        if updated_count > 0:
-            self.log("Updated {} actions".format(updated_count), 1)
-        updated_count = self.commit_alerts()
-        if updated_count > 0:
-            self.log("Updated {} alerts".format(updated_count), 1)
-        updated_count = self.commit_events()
-        if updated_count > 0:
-            self.log("Updated {} events".format(updated_count), 1)
         updated_count = self.commit_policies()
         if updated_count > 0:
             self.log("Updated {} policies".format(updated_count), 1)
-        updated_count = self.commit_rules()
+        updated_count = self.commit_actions()
         if updated_count > 0:
-            self.log("Updated {} rules".format(updated_count), 1)
+            self.log("Updated {} actions".format(updated_count), 1)
         updated_count = self.commit_tags()
         if updated_count > 0:
             self.log("Updated {} tags".format(updated_count), 1)
+        updated_count = self.commit_rules()
+        if updated_count > 0:
+            self.log("Updated {} rules".format(updated_count), 1)
+        updated_count = self.commit_events()
+        if updated_count > 0:
+            self.log("Updated {} events".format(updated_count), 1)
+        updated_count = self.commit_alerts()
+        if updated_count > 0:
+            self.log("Updated {} alerts".format(updated_count), 1)
         updated_count = self.commit_blacklist_ip()
         if updated_count > 0:
             self.log("Updated {} balcklisted IP".format(updated_count), 1)
@@ -1439,7 +1486,8 @@ class Run:
                     if 'and' in f['expr'].keys() and f['expr']['and']:
                         if f['expr']['and'][0]['operator'] == '=':
                             if 'variables' in f['expr']['and'][0].keys() and f['expr']['and'][0]['variables']:
-                                if f['expr']['and'][0]['variables'][0]['name'] == 'POLICY_ID':  # Filter for exact policy
+                                if f['expr']['and'][0]['variables'][0][
+                                    'name'] == 'POLICY_ID':  # Filter for exact policy
                                     is_by_policy_filter = True
                                     filter_policy_id = f['expr']['and'][0]['value']
                                     for importing_policy in self.POLICIES:
@@ -1448,9 +1496,6 @@ class Run:
                                             break
                 if not is_by_policy_filter:  # Not a by-policy filter, keep it
                     filters.append(f)
-
-
-
 
             res['custom_policies'] = custom_policies
             res['policies'] = policies
@@ -1670,6 +1715,226 @@ class Run:
 
         return counter
 
+    # Methods to get extra objects (exist in MongoDB and absent in files)
+    def get_extra(self):
+        extra_count = self.get_extra_policies()
+        if extra_count > 0:
+            self.log("Got {} extra policies: {} system, {} custom".format(extra_count, len(self.POLICIES_EXTRA_SYSTEM),
+                                                                          len(self.POLICIES_EXTRA_CUSTOM)), 1)
+        extra_count = self.get_extra_actions()
+        if extra_count > 0:
+            self.log("Got {} extra actions: {} system, {} custom".format(extra_count, len(self.ACTIONS_EXTRA_SYSTEM),
+                                                                         len(self.ACTIONS_EXTRA_CUSTOM)), 1)
+        extra_count = self.get_extra_tags()
+        if extra_count > 0:
+            self.log("Got {} extra tags: {} system, {} custom".format(extra_count, len(self.TAGS_EXTRA_SYSTEM),
+                                                                      len(self.TAGS_EXTRA_CUSTOM)), 1)
+        extra_count = self.get_extra_rules()
+        if extra_count > 0:
+            self.log("Got {} extra rules: {} system, {} custom".format(extra_count, len(self.RULES_EXTRA_SYSTEM),
+                                                                       len(self.RULES_EXTRA_CUSTOM)), 1)
+        extra_count = self.get_extra_events()
+        if extra_count > 0:
+            self.log("Got {} extra events: {} system, {} custom".format(extra_count, len(self.EVENTS_EXTRA_SYSTEM),
+                                                                        len(self.EVENTS_EXTRA_CUSTOM)), 1)
+        extra_count = self.get_extra_alerts()
+        if extra_count > 0:
+            self.log("Got {} extra alerts: {} system, {} custom".format(extra_count, len(self.ALERTS_EXTRA_SYSTEM),
+                                                                        len(self.ALERTS_EXTRA_CUSTOM)), 1)
+        extra_count = self.get_extra_blacklist_ip()
+        if extra_count > 0:
+            self.log("Got {} extra blacklisted IP", 1)
+        extra_count = self.get_extra_blacklist_hosts()
+        if extra_count > 0:
+            self.log("Got {} extra blacklisted hosts", 1)
+        extra_count = self.get_extra_firewall()
+        if extra_count > 0:
+            self.log("Got {} extra firewalled IP", 1)
+
+    def get_extra_policies(self):
+        res = list()
+        for stored in self.STORED_POLICIES:
+            found = False
+            for loaded in self.LOADED_POLICIES:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Policy {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.POLICIES_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.POLICIES_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_actions(self):
+        res = list()
+        for stored in self.STORED_ACTIONS:
+            found = False
+            for loaded in self.LOADED_ACTIONS:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Action {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.ACTIONS_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.ACTIONS_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_tags(self):
+        res = list()
+        for stored in self.STORED_TAGS:
+            found = False
+            for loaded in self.LOADED_TAGS:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Tag {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.TAGS_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.TAGS_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_rules(self):
+        res = list()
+        for stored in self.STORED_RULES:
+            found = False
+            for loaded in self.LOADED_RULES:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Rule {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.RULES_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.RULES_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_events(self):
+        res = list()
+        for stored in self.STORED_EVENTS:
+            found = False
+            for loaded in self.LOADED_EVENTS:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Event {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.EVENTS_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.EVENTS_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_alerts(self):
+        res = list()
+        for stored in self.STORED_ALERTS:
+            found = False
+            for loaded in self.LOADED_ALERTS:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Alert {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            if '_is_system' in o.keys() and not o['_is_system'] is None and o['_is_system']:
+                self.ALERTS_EXTRA_SYSTEM.append(str(o['_id']))
+            else:
+                self.ALERTS_EXTRA_CUSTOM.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_blacklist_ip(self):
+        res = list()
+        for stored in self.STORED_BLACKLIST_IP:
+            found = False
+            for loaded in self.LOADED_BLACKLIST_IP:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Blacklisted IP {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            self.BLACKLIST_IP_EXTRA.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_blacklist_hosts(self):
+        res = list()
+        for stored in self.STORED_BLACKLIST_HOSTS:
+            found = False
+            for loaded in self.LOADED_BLACKLIST_HOSTS:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Blacklisted host {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            self.BLACKLIST_HOSTS_EXTRA.append(str(o['_id']))
+
+        return len(res)
+
+    def get_extra_firewall(self):
+        res = list()
+        for stored in self.STORED_FIREWALL:
+            found = False
+            for loaded in self.LOADED_FIREWALL:
+                if str(stored['_id']) == str(loaded['_id']):
+                    found = True
+                    break
+            if not found:
+                res.append(stored)
+                self.debug("Firewalled IP {} counted as extra".format(str(stored['_id'])))
+
+        for o in res:
+            self.FIREWALL_EXTRA.append(str(o['_id']))
+
+        return len(res)
+
+    # Methods to get rid of extra objects
+    def delete_system(self):
+        self.log("Stub for delete_system")
+
+    def delete_custom(self):
+        self.log("Stub for delete_custom")
+
+    def disable_system(self):
+        self.log("Stub for disable_system")
+
+    def disable_custom(self):
+        self.log("Stub for disable_custom")
+
 
 if __name__ == "__main__":
     r = Run(parse_cli_args(), MongoDB())
@@ -1690,3 +1955,18 @@ if __name__ == "__main__":
     r.commit()
     r.log("DONE")
 
+    # Process extra objects if needed
+    if r.NEED_EXTRA_PROCESSING:
+        # Get extra objects
+        r.log("Getting extra objects ...")
+        r.get_extra()
+        r.log("DONE")
+
+        if r.args.DISABLE_EXTRA_SYSTEM:
+            r.disable_system()
+        if r.args.DISABLE_EXTRA_CUSTOM:
+            r.disable_custom()
+        if r.args.DELETE_EXTRA_SYSTEM:
+            r.delete_system()
+        if r.args.DELETE_EXTRA_CUSTOM:
+            r.delete_custom()
