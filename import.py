@@ -409,6 +409,9 @@ class Run:
         self.args.IMPORT_FIREWALL = 'all'
         self.go_single()
 
+        # Restore original value
+        self.args.CLASS = 'all'
+
     def go(self):
         if self.args.CLASS == "all":
             self.go_all()
@@ -2150,6 +2153,14 @@ if __name__ == "__main__":
     r.log("Committing changes to MongoDB ...")
     r.commit()
     r.log("DONE\n")
+
+    # Removing extra rules if importing 'policies'
+    if r.args.CLASS == "policies":
+        r.log("Getting extra objects ...")
+        r.get_extra_rules()
+        r.log("DONE\n")
+        r.delete_system()
+        r.delete_custom()
 
     # Process extra objects if needed
     if r.NEED_EXTRA_PROCESSING:
