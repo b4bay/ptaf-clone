@@ -1985,7 +1985,7 @@ class Run:
         if deleted_total == 0:
             self.log("Nothing to delete", 1)
 
-        self.log("DONE")
+        self.log("DONE\n")
 
     def delete_custom(self):
         self.log("Deleting custom extra objects ...")
@@ -2075,7 +2075,7 @@ class Run:
         if deleted_total == 0:
             self.log("Nothing to delete", 1)
 
-        self.log("DONE")
+        self.log("DONE\n")
 
     def disable_system(self):
         self.log("Disabling system extra objects ...")
@@ -2102,7 +2102,7 @@ class Run:
         if disabled_total == 0:
             self.log("Nothing to disable", 1)
 
-        self.log("DONE")
+        self.log("DONE\n")
 
     def disable_custom(self):
         self.log("Disabling custom extra objects ...")
@@ -2129,7 +2129,7 @@ class Run:
         if disabled_total == 0:
             self.log("Nothing to disable", 1)
 
-        self.log("DONE")
+        self.log("DONE\n")
 
 
 if __name__ == "__main__":
