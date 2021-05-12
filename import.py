@@ -1743,13 +1743,13 @@ class Run:
                                                                         len(self.ALERTS_EXTRA_CUSTOM)), 1)
         extra_count = self.get_extra_blacklist_ip()
         if extra_count > 0:
-            self.log("Got {} extra blacklisted IP", 1)
+            self.log("Got {} extra blacklisted IP".format(extra_count), 1)
         extra_count = self.get_extra_blacklist_hosts()
         if extra_count > 0:
-            self.log("Got {} extra blacklisted hosts", 1)
+            self.log("Got {} extra blacklisted hosts".format(extra_count), 1)
         extra_count = self.get_extra_firewall()
         if extra_count > 0:
-            self.log("Got {} extra firewalled IP", 1)
+            self.log("Got {} extra firewalled IP".format(extra_count), 1)
 
     def get_extra_policies(self):
         res = list()
