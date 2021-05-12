@@ -2156,7 +2156,7 @@ if __name__ == "__main__":
         # Get extra objects
         r.log("Getting extra objects ...")
         r.get_extra()
-        r.log("DONE")
+        r.log("DONE\n")
 
         if r.args.DISABLE_EXTRA_SYSTEM:
             r.disable_system()
