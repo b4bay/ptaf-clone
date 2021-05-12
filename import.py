@@ -306,7 +306,7 @@ class Run:
         self.BLACKLIST_HOSTS_EXTRA = list()
         self.FIREWALL_EXTRA = list()
         self.NEED_EXTRA_PROCESSING = self.args.DELETE_EXTRA_CUSTOM or self.args.DISABLE_EXTRA_CUSTOM \
-                                     or self.args.DELETE_EXTRA_SYSTEM or self.args.DISABLE_EXTRA_CUSTOM
+                                     or self.args.DELETE_EXTRA_SYSTEM or self.args.DISABLE_EXTRA_SYSTEM
 
     def debug(self, s, indent=2):
         tabs = "    " * indent
