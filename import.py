@@ -2084,7 +2084,7 @@ class Run:
         disabled_count = 0
         for str_id in self.ALERTS_EXTRA_SYSTEM:
             self.debug("Disabling system alert {}".format(str_id))
-            self.mongo.update_one('alerts', str_id, {'enabled': False})
+            self.mongo.update_one('alerts', str_id, {"$set": {'enabled': False}})
             disabled_count += 1
         if disabled_count > 0:
             self.log("Disabled {} system alerts".format(disabled_count), 1)
@@ -2093,7 +2093,7 @@ class Run:
         disabled_count = 0
         for str_id in self.RULES_EXTRA_SYSTEM:
             self.debug("Disabling system rules {}".format(str_id))
-            self.mongo.update_one('rules', str_id, {'enabled': False})
+            self.mongo.update_one('rules', str_id, {"$set": {'enabled': False}})
             disabled_count += 1
         if disabled_count > 0:
             self.log("Disabled {} system rules".format(disabled_count), 1)
@@ -2111,7 +2111,7 @@ class Run:
         disabled_count = 0
         for str_id in self.ALERTS_EXTRA_CUSTOM:
             self.debug("Disabling custom alert {}".format(str_id))
-            self.mongo.update_one('alerts', str_id, {'enabled': False})
+            self.mongo.update_one('alerts', str_id, {"$set": {'enabled': False}})
             disabled_count += 1
         if disabled_count > 0:
             self.log("Disabled {} custom alerts".format(disabled_count), 1)
@@ -2120,7 +2120,7 @@ class Run:
         disabled_count = 0
         for str_id in self.RULES_EXTRA_CUSTOM:
             self.debug("Disabling custom rules {}".format(str_id))
-            self.mongo.update_one('rules', str_id, {'enabled': False})
+            self.mongo.update_one('rules', str_id, {"$set": {'enabled': False}})
             disabled_count += 1
         if disabled_count > 0:
             self.log("Disabled {} custom rules".format(disabled_count), 1)
