@@ -1771,6 +1771,7 @@ class Run:
         if extra_count > 0:
             self.log("Got {} extra alerts: {} system, {} custom".format(extra_count, len(self.ALERTS_EXTRA_SYSTEM),
                                                                         len(self.ALERTS_EXTRA_CUSTOM)), 1)
+        """ # Let blacklisted and firewalled IPs/hosts be different
         extra_count = self.get_extra_blacklist_ip()
         if extra_count > 0:
             self.log("Got {} extra blacklisted IP".format(extra_count), 1)
@@ -1780,6 +1781,7 @@ class Run:
         extra_count = self.get_extra_firewall()
         if extra_count > 0:
             self.log("Got {} extra firewalled IP".format(extra_count), 1)
+        """
 
     def get_extra_policies(self):
         res = list()
@@ -2040,6 +2042,7 @@ class Run:
         self.log("Deleting custom extra objects ...")
         deleted_total = 0
 
+        """ # Let blacklisted and firewalled IPs/hosts be different
         deleted_count = 0
         for str_id in self.FIREWALL_EXTRA:
             self.debug("Deleting firewalled IP {}".format(str_id))
@@ -2066,6 +2069,7 @@ class Run:
         if deleted_count > 0:
             self.log("Deleted {} custom blacklisted IP".format(deleted_count), 1)
         deleted_total += deleted_count
+        """
 
         deleted_count = 0
         for str_id in self.ALERTS_EXTRA_CUSTOM:
