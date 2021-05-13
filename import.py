@@ -339,41 +339,57 @@ class Run:
         self.STORED_FIREWALL = self.mongo.fetch_all('ipset')
 
     def go_single(self):
+        def get_condition(o):
+            if type(o) == list:  # List of objects id
+                return ", ".join(o)
+            else:  # Regex
+                return str(o.pattern)
+
         if self.args.CLASS == "actions":
+            self.log("Going to import actions {}".format(get_condition(self.args.IMPORT_ACTIONS)))
             self.get_actions()
         elif self.args.CLASS == "alerts":
+            self.log("Going to import alerts {}".format(get_condition(self.args.IMPORT_ALERTS)))
             (actions_from_alerts, events) = self.get_alerts()
             (rules, tags_from_events) = self.get_events(events)
             (actions_from_rules, tags_from_rules) = self.get_rules(rules)
             self.get_actions(actions_from_alerts + actions_from_rules)
             self.get_tags(tags_from_events + tags_from_rules)
         elif self.args.CLASS == "events":
+            self.log("Going to import events {}".format(get_condition(self.args.IMPORT_EVENTS)))
             (rules, tags_from_events) = self.get_events()
             (actions, tags_from_rules) = self.get_rules(rules)
             self.get_actions(actions)
             self.get_tags(tags_from_events + tags_from_rules)
         elif self.args.CLASS == "policies":
+            self.log("Going to import policies {}".format(get_condition(self.args.IMPORT_POLICIES)))
             rules = self.get_policies()
             (actions, tags) = self.get_rules(rules)
             self.get_tags(tags)
             self.get_actions(actions)
         elif self.args.CLASS == "rules":
+            self.log("Going to import rules {}".format(get_condition(self.args.IMPORT_RULES)))
             (actions, tags) = self.get_rules()
             self.get_tags(tags)
             self.get_actions(actions)
         elif self.args.CLASS == "tags":
+            self.log("Going to import tags {}".format(get_condition(self.args.IMPORT_TAGS)))
             self.get_tags()
         elif self.args.CLASS == "blacklist-ip":
+            self.log("Going to import '{}' blacklisted IP".format(self.args.IMPORT_BLACKLIST))
             self.get_blacklist_ip()
         elif self.args.CLASS == "blacklist-host":
+            self.log("Going to import blacklisted hosts")
             self.get_blacklist_hosts()
         elif self.args.CLASS == "firewall":
+            self.log("Going to import '{}' firewalled IP".format(self.args.IMPORT_FIREWALL))
             actions = self.get_firewall()
             self.get_actions(actions)
         else:
             raise KeyError("Unknown class to import: {}".format(self.args.CLASS))
 
     def go_all(self):
+        self.log("Going to import the whole ruleset")
         any_re = re.compile(".*", re.IGNORECASE)
         # Import all the actions
         self.args.CLASS = 'actions'
@@ -2213,4 +2229,4 @@ if __name__ == "__main__":
 
 
 
-    r.log("DONE. Import successfully completed.")
+    r.log("DONE. Import successfully completed.\n")
