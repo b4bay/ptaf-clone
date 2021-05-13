@@ -378,7 +378,7 @@ class Run:
         elif self.args.CLASS == "blacklist-ip":
             self.log("Going to import '{}' blacklisted IP".format(self.args.IMPORT_BLACKLIST))
             self.get_blacklist_ip()
-        elif self.args.CLASS == "blacklist-host":
+        elif self.args.CLASS == "blacklist-hosts":
             self.log("Going to import blacklisted hosts")
             self.get_blacklist_hosts()
         elif self.args.CLASS == "firewall":
