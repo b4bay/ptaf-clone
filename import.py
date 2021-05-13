@@ -34,7 +34,7 @@ def load_from_yaml(filename):
 
 
 class MongoDB:
-    def __init__(self, connection_string="", db="waf"):
+    def __init__(self, connection_string="", db="waf", dry_run=False):
         if connection_string:
             self.client = MongoClient(connection_string)
             self.db = self.client[db]
@@ -51,6 +51,8 @@ class MongoDB:
                 self.db = self.client['waf']
             except:
                 print("Cannot connect to local MongoDB, exiting")
+
+        self.dry_run = dry_run
 
     def fetch_all(self, collection_name, filter={}, excluded_fields=[]):
         res = []
@@ -91,7 +93,8 @@ class MongoDB:
                 return
 
         storage = self.db[collection_name]
-        storage.find_one_and_replace(filter, replacement, upsert=True)
+        if not self.dry_run:
+            storage.find_one_and_replace(filter, replacement, upsert=True)
 
     def update_one(self, collection_name, filter, update):
         if type(filter) == str:  # Means filter by ObjectId
@@ -102,7 +105,8 @@ class MongoDB:
                 return
 
         storage = self.db[collection_name]
-        storage.find_one_and_update(filter, update)
+        if not self.dry_run:
+            storage.find_one_and_update(filter, update)
 
     def delete_one(self, collection_name, filter):
         if type(filter) == str:  # Means filter by ObjectId
@@ -113,7 +117,8 @@ class MongoDB:
                 return
 
         storage = self.db[collection_name]
-        storage.delete_one(filter)
+        if not self.dry_run:
+            storage.delete_one(filter)
 
 
 def parse_cli_args(test_data=""):
@@ -220,6 +225,11 @@ def parse_cli_args(test_data=""):
                         dest='DISABLE_EXTRA_SYSTEM',
                         required=False,
                         help='Disable system rules and alerts exist in database but absent in ruleset')
+    parser.add_argument('--dry-run',
+                        action='store_true',
+                        dest='DRY_RUN',
+                        required=False,
+                        help='Doing all the stuff, but do not write anything to MongoDB')
     parser.add_argument('--debug',
                         action='store_true',
                         dest='DEBUG',
@@ -2159,6 +2169,9 @@ if __name__ == "__main__":
     r = Run(parse_cli_args(), MongoDB())
     r.bootstrap()
 
+    if r.args.DRY_RUN:
+        r.log("[!][!] DRY-RUN MODE. NO ACTUAL CHANGES WILL BE MADE [!][!][+]\n")
+
     # Load from files
     r.log("Loading ruleset from files ...")
     r.load()
@@ -2168,19 +2181,6 @@ if __name__ == "__main__":
     r.log("Making subset to import ...")
     r.go()
     r.log("DONE\n")
-
-    # Commit data to storage
-    r.log("Committing changes to MongoDB ...")
-    r.commit()
-    r.log("DONE\n")
-
-    # Removing extra rules if importing 'policies'
-    if r.args.CLASS == "policies":
-        r.log("Getting extra objects ...")
-        r.get_extra_rules_from_imported()
-        r.log("DONE\n")
-        r.delete_system()
-        r.delete_custom()
 
     # Process extra objects if needed
     if r.NEED_EXTRA_PROCESSING:
@@ -2197,5 +2197,20 @@ if __name__ == "__main__":
             r.delete_system()
         if r.args.DELETE_EXTRA_CUSTOM:
             r.delete_custom()
+
+    # Commit data to storage
+    r.log("Committing changes to MongoDB ...")
+    r.commit()
+    r.log("DONE\n")
+
+    # Removing extra rules if importing 'policies'
+    if r.args.CLASS == "policies":
+        r.log("Getting extra objects ...")
+        r.get_extra_rules_from_imported()
+        r.log("DONE\n")
+        r.delete_system()
+        r.delete_custom()
+
+
 
     r.log("DONE. Import successfully completed.")
