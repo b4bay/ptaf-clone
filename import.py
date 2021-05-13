@@ -259,11 +259,11 @@ def parse_cli_args(test_data=""):
 
 
 class Run:
-    def __init__(self, args, mongo):
-        if not mongo:
-            mongo = MongoDB()
-        self.mongo = mongo
+    def __init__(self, args, mongo=None):
         self.args = args
+        if not mongo:
+            mongo = MongoDB(dry_run=self.args.DRY_RUN)
+        self.mongo = mongo
         self.POLICIES_DIR = "policies"
         self.RULES_DIR = "rules"
         self.TAGS_DIR = "tags"
@@ -2166,7 +2166,7 @@ class Run:
 
 
 if __name__ == "__main__":
-    r = Run(parse_cli_args(), MongoDB())
+    r = Run(parse_cli_args())
     r.bootstrap()
 
     if r.args.DRY_RUN:
