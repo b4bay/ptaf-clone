@@ -2170,7 +2170,7 @@ if __name__ == "__main__":
     r.bootstrap()
 
     if r.args.DRY_RUN:
-        r.log("[!][!] DRY-RUN MODE. NO ACTUAL CHANGES WILL BE MADE [!][!][+]\n")
+        print("\n!!! DRY-RUN MODE. NO ACTUAL CHANGES WILL BE MADE !!!\n")
 
     # Load from files
     r.log("Loading ruleset from files ...")
