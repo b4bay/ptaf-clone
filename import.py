@@ -427,7 +427,7 @@ class Run:
         self.go_single()
 
         # Import all the blacklisted hosts
-        self.args.CLASS = 'blacklist-host'
+        self.args.CLASS = 'blacklist-hosts'
         self.go_single()
 
         # Import all the firewall rules
